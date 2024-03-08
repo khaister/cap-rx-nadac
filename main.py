@@ -40,16 +40,22 @@ from decimal import Decimal
 import requests
 
 
-URL = "https://download.medicaid.gov/data/nadac-comparison-02-01-2023.csv"
-
-
-def format_dollar_amount(amount):
+def format_dollar_amount(amount: Decimal):
     if amount < 0:
         return f"-${abs(amount)}"
     return f"${amount}"
 
-def stream_data(chunk_size):
-    with contextlib.closing(requests.get(URL, stream=True)) as stream:
+
+def parse_nadac_data(chunk_size: int):
+    """
+    Parse NADAC Weekly Comparison data.
+
+    :param chunk_size: int, size of the chunk in byte to read from the stream
+    :return: dict, NDC Description to per unit price change
+    """
+    url = "https://download.medicaid.gov/data/nadac-comparison-02-01-2023.csv"
+
+    with contextlib.closing(requests.get(url, stream=True)) as stream:
         data = {}
 
         lines = (line.decode('utf-8') for line in stream.iter_lines(chunk_size))
@@ -59,24 +65,34 @@ def stream_data(chunk_size):
             if row[0] == "NDC Description":
                 continue
 
+            # calculate per unit price change
             description = row[0]
             old_nadac = Decimal(row[2])
             new_nadac = Decimal(row[3])
             unit_price_change = new_nadac - old_nadac
 
+            # update data
             data.update({description: unit_price_change})
 
-        data_by_price_change = sorted(data.items(), key=lambda x: x[1], reverse=True)
-        top_10_increases = data_by_price_change[:10]
-        top_10_decreases = data_by_price_change[-10:]
+        return data
 
-        print("Top 10 NADAC per unit price increases of 2023:")
-        for description, price_change in top_10_increases:
-            print(f"{format_dollar_amount(price_change)}: {description}")
-        print("\nTop 10 NADAC per unit price decreases of 2023:")
-        for description, price_change in top_10_decreases:
-            print(f"{format_dollar_amount(price_change)}: {description}")
+
+def print_top_10s(data: dict):
+    """Print top 10 price increases and decreases."""
+    data_by_price_change = sorted(data.items(), key=lambda x: x[1], reverse=True)
+    top_10_increases = data_by_price_change[:10]
+    top_10_decreases = data_by_price_change[-10:]
+
+    print("Top 10 NADAC per unit price increases of 2023:")
+    for description, price_change in top_10_increases:
+        print(f"{format_dollar_amount(price_change)}: {description}")
+
+    print("\nTop 10 NADAC per unit price decreases of 2023:")
+    for description, price_change in top_10_decreases:
+        print(f"{format_dollar_amount(price_change)}: {description}")
 
 
 if __name__ == "__main__":
-    stream_data(1024 * 1024)  # 1MB
+    chunk_size = 1024 * 1024 * 10  # 10MB
+    data = parse_nadac_data(chunk_size)
+    print_top_10s(data)
