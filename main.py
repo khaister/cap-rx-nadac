@@ -58,8 +58,8 @@ def parse_nadac_data(chunk_size: int):
     with contextlib.closing(requests.get(url, stream=True)) as stream:
         data = {}
 
-        lines = (line.decode('utf-8') for line in stream.iter_lines(chunk_size))
-        reader = csv.reader(lines, delimiter=',', quotechar='"')
+        lines = (line.decode("utf-8") for line in stream.iter_lines(chunk_size))
+        reader = csv.reader(lines, delimiter=",", quotechar='"')
         for row in reader:
             # skip header
             if row[0] == "NDC Description":
