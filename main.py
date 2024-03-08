@@ -33,6 +33,50 @@
 # IBUPROFEN 200 MG SOFTGEL,00536114730,0.07853,0.08730,G,11.17,Survey Rate,12/14/2022,12/21/2022,12/21/2022
 # ACETAMINOPHEN 325 MG TABLET,00904671960,0.02468,0.02209,G,-10.49,Survey Rate,12/14/2022,12/21/2022,12/21/2022
 
+import contextlib
+import csv
+from decimal import Decimal
+
 import requests
 
+
 URL = "https://download.medicaid.gov/data/nadac-comparison-02-01-2023.csv"
+
+
+def format_dollar_amount(amount):
+    if amount < 0:
+        return f"-${abs(amount)}"
+    return f"${amount}"
+
+def stream_data(chunk_size):
+    with contextlib.closing(requests.get(URL, stream=True)) as stream:
+        data = {}
+
+        lines = (line.decode('utf-8') for line in stream.iter_lines(chunk_size))
+        reader = csv.reader(lines, delimiter=',', quotechar='"')
+        for row in reader:
+            # skip header
+            if row[0] == "NDC Description":
+                continue
+
+            description = row[0]
+            old_nadac = Decimal(row[2])
+            new_nadac = Decimal(row[3])
+            unit_price_change = new_nadac - old_nadac
+
+            data.update({description: unit_price_change})
+
+        data_by_price_change = sorted(data.items(), key=lambda x: x[1], reverse=True)
+        top_10_increases = data_by_price_change[:10]
+        top_10_decreases = data_by_price_change[-10:]
+
+        print("Top 10 NADAC per unit price increases of 2023:")
+        for description, price_change in top_10_increases:
+            print(f"{format_dollar_amount(price_change)}: {description}")
+        print("\nTop 10 NADAC per unit price decreases of 2023:")
+        for description, price_change in top_10_decreases:
+            print(f"{format_dollar_amount(price_change)}: {description}")
+
+
+if __name__ == "__main__":
+    stream_data(1024 * 1024)  # 1MB
