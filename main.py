@@ -33,6 +33,34 @@
 # IBUPROFEN 200 MG SOFTGEL,00536114730,0.07853,0.08730,G,11.17,Survey Rate,12/14/2022,12/21/2022,12/21/2022
 # ACETAMINOPHEN 325 MG TABLET,00904671960,0.02468,0.02209,G,-10.49,Survey Rate,12/14/2022,12/21/2022,12/21/2022
 
+"""
+Results from parsing https://download.medicaid.gov/data/nadac-comparison-03-06-2024.csv
+---
+Top 10 NADAC per unit price increases of 2024:
+$1279.15089: STELARA 90 MG/ML SYRINGE
+$1275.99780: STELARA 45 MG/0.5 ML SYRINGE
+$1252.05575: SKYRIZI 150 MG/ML SYRINGE
+$1238.49522: SKYRIZI 150 MG/ML PEN
+$642.57491: TREMFYA 100 MG/ML INJECTOR
+$559.07223: SIMPONI 50 MG/0.5 ML SYRINGE
+$485.82069: COPAXONE 20 MG INJECTION KIT
+$456.72115: SIMPONI 50 MG/0.5 ML PEN INJEC
+$309.97036: AVONEX PREFILLED SYR 30 MCG KIT
+$308.91481: CIMZIA 2X200 MG/ML SYRINGE KIT
+
+Top 10 NADAC per unit price decreases of 2024:
+-$48.81683: AVONEX PREFILLED SYR 30 MCG
+-$50.71803: BUTRANS 7.5 MCG/HR PATCH
+-$54.65034: BUTRANS 10 MCG/HR PATCH
+-$60.29936: BUTRANS 15 MCG/HR PATCH
+-$77.30446: DIHYDROERGOTAMINE MESYLATE 4 MG/ML NASAL SPRAY
+-$89.32400: ASMANEX TWISTHALER 110 MCG #30
+-$96.17616: BUTRANS 20 MCG/HR PATCH
+-$96.41864: ASMANEX TWISTHALER 220 MCG #30
+-$112.84223: ASMANEX TWISTHALER 220 MCG #60
+-$162.31409: ASMANEX TWISTHALR 220 MCG #120
+"""
+
 import contextlib
 import csv
 from decimal import Decimal
@@ -53,7 +81,7 @@ def parse_nadac_data(chunk_size: int):
     :param chunk_size: int, size of the chunk in byte to read from the stream
     :return: dict, NDC Description to per unit price change
     """
-    url = "https://download.medicaid.gov/data/nadac-comparison-02-01-2023.csv"
+    url = "https://download.medicaid.gov/data/nadac-comparison-03-06-2024.csv"
 
     with contextlib.closing(requests.get(url, stream=True)) as stream:
         data = {}
@@ -83,11 +111,11 @@ def print_top_10s(data: dict):
     top_10_increases = data_by_price_change[:10]
     top_10_decreases = data_by_price_change[-10:]
 
-    print("Top 10 NADAC per unit price increases of 2023:")
+    print("Top 10 NADAC per unit price increases of 2024:")
     for description, price_change in top_10_increases:
         print(f"{format_dollar_amount(price_change)}: {description}")
 
-    print("\nTop 10 NADAC per unit price decreases of 2023:")
+    print("\nTop 10 NADAC per unit price decreases of 2024:")
     for description, price_change in top_10_decreases:
         print(f"{format_dollar_amount(price_change)}: {description}")
 
